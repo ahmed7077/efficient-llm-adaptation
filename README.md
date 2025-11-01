@@ -169,9 +169,3 @@ Meta AI for LLaMA models
 Hugging Face for Transformers, PEFT, and TRL libraries
 
 IonIdea internship project guidance
-
-License
-
-This project is licensed under the MIT License.
-See the LICENSE
- file for more details.
