@@ -1,171 +1,179 @@
-Efficient Fine-Tuning of LLaMA 3.2–3B using LoRA, QLoRA, and MCP
+# Efficient Fine-Tuning of LLaMA 3.2–3B using LoRA, QLoRA, and MCP
 
-This project focuses on parameter-efficient fine-tuning of the LLaMA 3.2–3B–Instruct model using LoRA (Low-Rank Adaptation) and QLoRA for domain-specific adaptation.
-It integrates a Model Control Pipeline (MCP) to intelligently route between database retrieval and generative model inference, enabling efficient training, evaluation, and controlled response generation.
+## Overview
 
-Table of Contents
+This project demonstrates parameter-efficient fine-tuning of the **LLaMA 3.2–3B–Instruct** model using **LoRA (Low-Rank Adaptation)** and **QLoRA** for domain-specific adaptation.
 
-Overview
+It introduces a **Model Control Pipeline (MCP)** that combines knowledge-base retrieval with generative inference, enabling controlled, efficient, and accurate response generation.
 
-Features
+The system is designed for memory-efficient training, scalable inference, and hybrid reasoning.
 
-Architecture
+---
 
-Installation
+## Features
 
-Usage
+* Parameter-efficient fine-tuning using LoRA and QLoRA
+* Integration of Model Control Pipeline (MCP) for intelligent routing
+* Lightweight knowledge-base retrieval for factual queries
+* LLM-based inference for unseen or generative queries
+* Compatible with GPU and CPU environments
+* Built using Hugging Face PEFT, TRL, and Transformers
+* Modular and extensible Python implementation
 
-Dataset Format
+---
 
-Model Control Pipeline (MCP)
+## Architecture
 
-Results
+### Training Phase
 
-Tech Stack
+* Loads dataset in JSONL format
+* Applies LoRA/QLoRA adapters on LLaMA 3.2–3B
+* Fine-tunes using Supervised Fine-Tuning (SFTTrainer)
 
-Acknowledgments
+### MCP Inference Phase
 
-License
+* Loads fine-tuned model and tokenizer
+* Builds a knowledge base from dataset
+* Routes queries to:
 
-Overview
+  * Exact match retrieval (database)
+  * Generative LLM inference
 
-Large Language Models (LLMs) are powerful but expensive to fine-tune due to their size.
-This project demonstrates an efficient, scalable approach to fine-tuning the LLaMA 3.2–3B model using LoRA and QLoRA, reducing GPU memory requirements while preserving accuracy.
+---
 
-The integrated MCP (Model Control Pipeline) provides a hybrid system that:
+## Installation
 
-Uses a knowledge base for exact recall of known data.
+### Prerequisites
 
-Falls back to model inference for unseen or generative queries.
+* Python 3.10+
+* CUDA-compatible GPU (recommended)
+* Hugging Face account with access to LLaMA 3.2–3B
 
-Applies lightweight guardrails for stable responses.
+---
 
-Features
+### Setup
 
-Fine-tuning of LLaMA 3.2–3B–Instruct using LoRA/QLoRA.
-
-Integrated Model Control Pipeline (MCP) for response routing.
-
-Parameter-efficient fine-tuning using PEFT and TRL.
-
-Supports both training and inference modes.
-
-Compatible with GPU and CPU environments.
-
-Modular, extensible Python implementation for future integration (e.g., Flask/Gradio UI).
-
-Architecture
-
-Training Phase
-
-Loads domain dataset in JSONL format.
-
-Applies LoRA or QLoRA adapters to the base LLaMA model.
-
-Fine-tunes the model using Supervised Fine-Tuning (SFT) via SFTTrainer.
-
-MCP Inference Phase
-
-Loads fine-tuned weights and tokenizer.
-
-Creates a knowledge base (dictionary) from training data.
-
-Routes each user query to either:
-
-Knowledge base lookup (for exact match).
-
-Model generation (for new or unseen inputs).
-
-Installation
-Prerequisites
-
-Python 3.10+
-
-CUDA-compatible GPU (recommended for training)
-
-Hugging Face account and access to LLaMA 3.2–3B
-
-Setup
+```bash id="lq8p3a"
 git clone https://github.com/<your-username>/<repository-name>.git
 cd <repository-name>
 pip install -r requirements.txt
+```
 
+---
 
-Or manually install:
+### Manual Dependencies
 
+```bash id="k2m9qp"
 pip install transformers datasets peft trl accelerate safetensors huggingface_hub
+```
 
-Usage
-1. Training
+---
 
-Edit the dataset path in the script:
+## Usage
 
+### 1. Training
+
+Edit dataset path:
+
+```python id="v8n2sa"
 dataset_path = "people_osl.jsonl"
+```
 
+Run training:
 
-Then run:
-
+```bash id="x9k2dp"
 python fine_tuning_llm.py
+```
 
+Model output will be saved at:
 
-The fine-tuned model will be saved in:
-
+```text id="q1m8pl"
 ./llama32_lora_merged_exact
+```
 
-2. Inference
+---
 
-Once training is complete, the same script will load the model and start the interactive MCP loop:
+### 2. Inference
 
-Enter instruction (or 'exit' to quit): Who is the CEO of OpenAI?
-[✅ MCP Database]
+After training, run interactive MCP mode:
+
+```text id="z7n3kd"
+Enter instruction (or 'exit' to quit):
+Who is the CEO of OpenAI?
+```
+
+Output:
+
+```text
+[MC P Database]
 Sam Altman
+```
 
-Dataset Format
+---
 
-The dataset should be in JSON Lines (JSONL) format:
+## Dataset Format
 
+The dataset must be in JSONL format:
+
+```json id="d8m2qp"
 {"instruction": "Who is the CEO of OpenAI?", "output": "Sam Altman"}
-{"instruction": "What is quantum computing?", "output": "Quantum computing uses qubits to perform parallel computations."}
+{"instruction": "What is quantum computing?", "output": "Quantum computing uses qubits for parallel computation."}
+```
 
+Each record must contain:
 
-Ensure keys are exactly "instruction" and "output".
+* `instruction`
+* `output`
 
-Model Control Pipeline (MCP)
+---
 
-The MCPServer class provides:
+## Model Control Pipeline (MCP)
 
-Database retrieval for exact matches.
+The MCP system includes:
 
-LLM inference for generative answers.
+* Exact match retrieval from a structured knowledge base
+* LLM-based generation for unseen queries
+* Guardrail logic for stable and controlled responses
 
-Guardrail mechanism to ensure valid outputs.
+This hybrid design ensures both:
 
-This hybrid approach combines factual consistency with generative flexibility.
+* Factual accuracy
+* Generative flexibility
 
-Results
+---
 
-Model fine-tuned successfully using LoRA (r=16, α=32, dropout=0.05).
+## Results
 
-Achieved stable convergence with minimal GPU memory usage.
+* Efficient fine-tuning achieved using LoRA (r=16, α=32, dropout=0.05)
+* Reduced GPU memory consumption compared to full fine-tuning
+* Stable convergence during training
+* Faster inference through MCP routing mechanism
 
-Inference latency reduced via lightweight MCP routing.
+---
 
-Tech Stack
+## Tech Stack
 
-Language: Python 3.10
+* Python 3.10
+* Hugging Face Transformers
+* PEFT (Parameter Efficient Fine-Tuning)
+* TRL (Transformer Reinforcement Learning)
+* Accelerate
+* Datasets
+* LLaMA 3.2–3B–Instruct
 
-Libraries: Transformers, PEFT, TRL, Accelerate, Datasets
+---
 
-Model: LLaMA 3.2–3B–Instruct
+## Acknowledgments
 
-Framework: Hugging Face Transformers / PEFT
+* Meta AI for LLaMA models
+* Hugging Face for Transformers and PEFT ecosystem
+* IonIdea internship guidance and support
 
-Environment: Google Colab (training), VS Code (local execution)
+---
 
-Acknowledgments
+## License
 
-Meta AI for LLaMA models
+This project is intended for educational and research purposes only.
 
-Hugging Face for Transformers, PEFT, and TRL libraries
+---
 
-IonIdea internship project guidance
