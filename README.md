@@ -1,179 +1,237 @@
-# Efficient Fine-Tuning of LLaMA 3.2–3B using LoRA, QLoRA, and MCP
+# Fine-Tuning Meta Llama 3.2-3B-Instruct using LoRA with a Lightweight Retrieval Layer
 
 ## Overview
 
-This project demonstrates parameter-efficient fine-tuning of the **LLaMA 3.2–3B–Instruct** model using **LoRA (Low-Rank Adaptation)** and **QLoRA** for domain-specific adaptation.
+This project demonstrates parameter-efficient fine-tuning of **Meta Llama 3.2-3B-Instruct** using **LoRA (Low-Rank Adaptation)** on a custom instruction-response dataset.
 
-It introduces a **Model Control Pipeline (MCP)** that combines knowledge-base retrieval with generative inference, enabling controlled, efficient, and accurate response generation.
+The project also implements a lightweight retrieval layer that first searches a structured knowledge base for exact matches before falling back to the fine-tuned LLM for response generation. This hybrid approach improves factual retrieval while preserving the model's generative capabilities.
 
-The system is designed for memory-efficient training, scalable inference, and hybrid reasoning.
-
----
-
-## Features
-
-* Parameter-efficient fine-tuning using LoRA and QLoRA
-* Integration of Model Control Pipeline (MCP) for intelligent routing
-* Lightweight knowledge-base retrieval for factual queries
-* LLM-based inference for unseen or generative queries
-* Compatible with GPU and CPU environments
-* Built using Hugging Face PEFT, TRL, and Transformers
-* Modular and extensible Python implementation
+This project was developed during my **AI Internship at IonIdea**, where I gained hands-on experience with Large Language Models (LLMs), prompt engineering, supervised fine-tuning, and LLM inference pipelines.
 
 ---
 
-## Architecture
+# Features
 
-### Training Phase
-
-* Loads dataset in JSONL format
-* Applies LoRA/QLoRA adapters on LLaMA 3.2–3B
-* Fine-tunes using Supervised Fine-Tuning (SFTTrainer)
-
-### MCP Inference Phase
-
-* Loads fine-tuned model and tokenizer
-* Builds a knowledge base from dataset
-* Routes queries to:
-
-  * Exact match retrieval (database)
-  * Generative LLM inference
+- Fine-tuning Meta Llama 3.2-3B-Instruct using LoRA
+- Supervised Fine-Tuning (SFT) with Hugging Face TRL
+- Lightweight retrieval layer for knowledge-base lookup
+- Deterministic LLM inference for consistent responses
+- Parameter-efficient training with LoRA adapters
+- End-to-end training and inference pipeline
+- GPU-accelerated training using PyTorch
 
 ---
 
-## Installation
+# Architecture
 
-### Prerequisites
+## Training Pipeline
 
-* Python 3.10+
-* CUDA-compatible GPU (recommended)
-* Hugging Face account with access to LLaMA 3.2–3B
-
----
-
-### Setup
-
-```bash id="lq8p3a"
-git clone https://github.com/<your-username>/<repository-name>.git
-cd <repository-name>
-pip install -r requirements.txt
+```
+Instruction Dataset (JSONL)
+            │
+            ▼
+     Formatting Function
+            │
+            ▼
+     LoRA Fine-Tuning
+            │
+            ▼
+Meta Llama 3.2-3B-Instruct
+            │
+            ▼
+     Fine-Tuned Model
 ```
 
 ---
 
-### Manual Dependencies
+## Inference Pipeline
 
-```bash id="k2m9qp"
+```
+             User Query
+                  │
+                  ▼
+      Retrieval / Routing Layer
+          │                │
+          ▼                ▼
+Knowledge Base      Fine-Tuned LLM
+          │                │
+          └───────┬────────┘
+                  ▼
+           Final Response
+```
+
+---
+
+# Training Configuration
+
+| Parameter | Value |
+|-----------|--------|
+| Base Model | Meta Llama 3.2-3B-Instruct |
+| Fine-Tuning Method | LoRA |
+| Dataset Size | 430 instruction-response pairs |
+| Training Steps | 800 |
+| Epochs | ~8 |
+| Batch Size | 1 |
+| Gradient Accumulation | 4 |
+| Learning Rate | 1e-4 |
+| LoRA Rank (r) | 16 |
+| LoRA Alpha | 32 |
+| LoRA Dropout | 0.05 |
+
+---
+
+# Training Results
+
+### Training Loss
+
+| Step | Loss |
+|------|------|
+| 80 | 1.3466 |
+| 160 | 0.7690 |
+| 240 | 0.6978 |
+| 320 | 0.6489 |
+| 400 | 0.5539 |
+| 480 | 0.5280 |
+| 560 | 0.5192 |
+| 640 | 0.5221 |
+| 720 | 0.5111 |
+| 800 | **0.5053** |
+
+The model demonstrated stable convergence throughout training, with the loss decreasing from **1.35** to **0.51**.
+
+---
+
+# Technologies Used
+
+- Python
+- PyTorch
+- Hugging Face Transformers
+- PEFT
+- TRL
+- Datasets
+- Accelerate
+- Google Colab
+- Meta Llama 3.2-3B-Instruct
+
+---
+
+# Installation
+
+Clone the repository
+
+```bash
+git clone https://github.com/ahmed7077/efficient-llm-adaptation.git
+
+cd efficient-llm-adaptation
+```
+
+Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install manually
+
+```bash
 pip install transformers datasets peft trl accelerate safetensors huggingface_hub
 ```
 
 ---
 
-## Usage
+# Dataset Format
 
-### 1. Training
+The training dataset should be provided in JSONL format.
 
-Edit dataset path:
+Example:
 
-```python id="v8n2sa"
-dataset_path = "people_osl.jsonl"
+```json
+{"instruction":"Who is the CEO of OpenAI?","output":"Sam Altman"}
+{"instruction":"What is quantum computing?","output":"Quantum computing uses qubits for computation."}
 ```
 
-Run training:
+Each record contains:
 
-```bash id="x9k2dp"
-python fine_tuning_llm.py
-```
-
-Model output will be saved at:
-
-```text id="q1m8pl"
-./llama32_lora_merged_exact
-```
+- instruction
+- output
 
 ---
 
-### 2. Inference
+# Training
 
-After training, run interactive MCP mode:
+Run
 
-```text id="z7n3kd"
-Enter instruction (or 'exit' to quit):
-Who is the CEO of OpenAI?
+```bash
+python train.py
 ```
 
-Output:
+The fine-tuned model will be saved as
 
-```text
-[MC P Database]
-Sam Altman
+```
+llama32_lora_merged_exact
 ```
 
 ---
 
-## Dataset Format
+# Inference
 
-The dataset must be in JSONL format:
+Run
 
-```json id="d8m2qp"
-{"instruction": "Who is the CEO of OpenAI?", "output": "Sam Altman"}
-{"instruction": "What is quantum computing?", "output": "Quantum computing uses qubits for parallel computation."}
+```bash
+python inference.py
 ```
 
-Each record must contain:
+Example
 
-* `instruction`
-* `output`
+```
+Enter instruction:
 
----
+Give details about Muhammad Ahmed
+```
 
-## Model Control Pipeline (MCP)
+Output
 
-The MCP system includes:
-
-* Exact match retrieval from a structured knowledge base
-* LLM-based generation for unseen queries
-* Guardrail logic for stable and controlled responses
-
-This hybrid design ensures both:
-
-* Factual accuracy
-* Generative flexibility
-
----
-
-## Results
-
-* Efficient fine-tuning achieved using LoRA (r=16, α=32, dropout=0.05)
-* Reduced GPU memory consumption compared to full fine-tuning
-* Stable convergence during training
-* Faster inference through MCP routing mechanism
+```
+Full Name: Muhammad Ahmed
+Age: 20
+DOB: 2005-05-23
+Nationality: Indian
+Degree: B.Tech
+University: Presidency University
+```
 
 ---
 
-## Tech Stack
+# Prompt Engineering
 
-* Python 3.10
-* Hugging Face Transformers
-* PEFT (Parameter Efficient Fine-Tuning)
-* TRL (Transformer Reinforcement Learning)
-* Accelerate
-* Datasets
-* LLaMA 3.2–3B–Instruct
+During this project, different prompting strategies were explored, including:
 
----
+- Zero-shot prompting
+- One-shot prompting
+- Few-shot prompting
 
-## Acknowledgments
-
-* Meta AI for LLaMA models
-* Hugging Face for Transformers and PEFT ecosystem
-* IonIdea internship guidance and support
+These techniques were evaluated to better understand their impact on LLM response quality and behavior.
 
 ---
 
-## License
+# Future Improvements
 
-This project is intended for educational and research purposes only.
+- Implement semantic retrieval using vector databases (FAISS/ChromaDB)
+- Support Retrieval-Augmented Generation (RAG)
+- Add evaluation metrics for model performance
+- Deploy the model using FastAPI or Streamlit
+- Extend the retrieval layer with fuzzy matching and embeddings
 
 ---
 
+# Acknowledgments
+
+- Meta AI for the Llama models
+- Hugging Face for the Transformers, PEFT, and TRL ecosystem
+- IonIdea Technologies for providing the internship opportunity and mentorship
+
+---
+
+# License
+
+This project is intended for educational and research purposes.
